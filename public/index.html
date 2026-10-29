@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIC Payment Agent</title>
+<link rel="stylesheet" href="/styles.css">
+<!-- AG Grid Community CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@36.2.0/styles/ag-grid.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@36.2.0/styles/ag-theme-quartz.css" />
+</head>
+<body>
+<div class="app">
+  <nav class="nav">
+    <div class="brand">SIC PAYMENT AGENT</div>
+    <div class="links">
+      <a href="#/" data-view="dashboard">Dashboard</a>
+      <a href="#/receivables" data-view="receivables">Receivables</a>
+      <a href="#/approvals" data-view="approvals">Approvals</a>
+      <a href="#/chat" data-view="chat">Chat</a>
+      <a href="#/decisions" data-view="decisions">Decisions</a>
+      <a href="#/invoices" data-view="invoices">Invoices</a>
+      <a href="#/subscriptions" data-view="subscriptions">Subscriptions</a>
+      <a href="#/products" data-view="products">Products</a>
+      <a href="#/mcp" data-view="mcp">MCP</a>
+      <a href="#/apimatic" data-view="apimatic">APIMatic</a>
+    </div>
+  </nav>
+  <main class="main">
+    <section id="view-dashboard" class="view"></section>
+    <section id="view-receivables" class="view hidden"></section>
+    <section id="view-approvals" class="view hidden"></section>
+    <section id="view-chat" class="view hidden"></section>
+    <section id="view-decisions" class="view hidden"></section>
+    <section id="view-invoices" class="view hidden"></section>
+    <section id="view-subscriptions" class="view hidden"></section>
+    <section id="view-products" class="view hidden"></section>
+    <section id="view-mcp" class="view hidden"></section>
+    <section id="view-apimatic" class="view hidden"></section>
+  </main>
+</div>
+<!-- AG Grid Community JS -->
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@36.2.0/dist/ag-grid-community.min.noStyle.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
