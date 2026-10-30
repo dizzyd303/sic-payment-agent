@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import express from 'express';
-import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { receivablesRouter } from './modules/receivables/routes.js';
@@ -14,13 +13,16 @@ import { invoicesRouter } from './modules/invoices/routes.js';
 import { subscriptionsRouter } from './modules/subscriptions/routes.js';
 import { productsRouter } from './modules/products/routes.js';
 import { mcpRouter } from './modules/mcp/routes.js';
+import { requireAdminForMutations } from './middleware/auth.js';
 import { apimaticRouter } from './modules/apimatic/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(cors());
+const corsOrigin = process.env.CORS_ORIGIN;
+if (corsOrigin) { app.use((req, res, next) => { res.setHeader('Access-Control-Allow-Origin', corsOrigin); res.setHeader('Vary', 'Origin'); next(); }); }
+app.use('/api', requireAdminForMutations);
 app.use(express.json());
 
 await initDatabase();
@@ -55,8 +57,13 @@ app.get('/api/paypal/status', async (_, res) => {
   const failedStmt = db.prepare("SELECT COUNT(*) as c FROM payouts WHERE status='failed'");
   const failed = await failedStmt.get() as { c: number } | undefined;
   const lastFailedStmt = db.prepare("SELECT * FROM payouts WHERE status='failed' ORDER BY created_at DESC LIMIT 1");
-  const lastFailed = await lastFailedStmt.get() as { id: string } | undefined;
-  res.json({ healthy: (failed?.c ?? 0) === 0, failedCount: failed?.c ?? 0, lastError: lastFailed ? { id: lastFailed.id, code: 'INSUFFICIENT_FUNDS', message: 'PayPal sandbox dry' } : null });
+  const lastFailed = await lastFailedStmt.get() as { id: string; vendor_name: string; amount_cents: number; created_at: string } | undefined;
+  res.json({
+    healthy: Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET),
+    paypalConfigured: Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET),
+    failedCount: failed?.c ?? 0,
+    lastFailed: lastFailed ? { id: lastFailed.id, vendor_name: lastFailed.vendor_name, amount_cents: lastFailed.amount_cents, created_at: lastFailed.created_at } : null,
+  });
 });
 
 app.use('/api/receivables', receivablesRouter);

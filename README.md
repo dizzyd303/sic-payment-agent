@@ -23,7 +23,7 @@ An AI-native payment platform where every financial decision is scored, narrated
 
 ```bash
 # Clone & install
-git clone <repo-url>
+git clone https://github.com/dizzyd303/sic-payment-agent.git
 cd sic-payment-agent
 pnpm install
 
@@ -199,9 +199,7 @@ CONFIDENCE_THRESHOLD=0.7
 
 ## 🎬 Demo Video
 
-[![SIC Payment Agent Demo](https://img.youtube.com/vi/VIDEO_ID/0.jpg)](https://youtu.be/VIDEO_ID)
-
-**3-minute walkthrough** covering all 5 demo flows + MCP + APIMatic + Decision Matrix.
+Demo video: not yet recorded. Planned recording is under 3 minutes and covers ONE proven flow end-to-end: parse -> resolve recipient -> evaluate/score -> block if low -> approve the exact pending transaction -> execute on PayPal Sandbox -> retrieve real status -> record -> dashboard shows decision, reasons, approval, and transaction status. No placeholder video link is included until the recording exists.
 
 ## 📝 License
 

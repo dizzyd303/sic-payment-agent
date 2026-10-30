@@ -3,7 +3,7 @@ import { getPayPalAgent } from '../../services/paypal/agent-toolkit.js';
 import { db } from '../../db/init.js';
 import crypto from 'node:crypto';
 
-export const productsRouter = Router();
+export const productsRouter: Router = Router();
 
 // Channel3 integration (if API key available)
 const CHANNEL3_API_KEY = process.env.CHANNEL3_API_KEY;

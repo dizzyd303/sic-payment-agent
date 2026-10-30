@@ -24,12 +24,14 @@ export async function llmComplete(prompt: string): Promise<LLMResponse> {
       // fall through to Ollama
     }
   }
-  // Ollama fallback
-  const ollamaEndpoint = 'http://localhost:11434/api/generate';
+  // Ollama fallback (configurable; defaults match the previous hardcode)
+  const ollamaBase = (process.env.OLLAMA_URL || 'http://localhost:11434').replace(/\/$/, '');
+  const ollamaEndpoint = `${ollamaBase}/api/generate`;
+  const ollamaModel = process.env.OLLAMA_MODEL || 'llama3.1';
   console.log('[LLM] Attempt Ollama fallback', { ollamaEndpoint, model: 'llama3.1' });
   try {
     const res = await axios.post(ollamaEndpoint, {
-      model: 'llama3.1',
+      model: ollamaModel,
       prompt,
       stream: false
     });

@@ -1,4 +1,4 @@
-const API = '';
+const API = ''; // same-origin: UI is served by the API server, so fetches use relative /api/...
 const views = {
   dashboard: document.getElementById('view-dashboard'),
   receivables: document.getElementById('view-receivables'),
@@ -330,15 +330,15 @@ function loadChat() {
     add('user', text); input.value = '';
     const res = await fetch('/api/chat/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text }) }).then(r => r.json());
     add('ai', res.reply);
-    if (res.requiresApproval) {
-      if (confirm('Confirm payout?')) {
-        const m = text.match(/pay\s+(?:the\s+)?(.+?)\s+\$?(\d+(?:\.\d+)?)/i);
-        if (m) {
-          const vendor = m[1].trim();
-          const amt = Math.round(parseFloat(m[2]) * 100);
-          const conf = await fetch('/api/chat/confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vendor, amount_cents: amt }) }).then(r => r.json());
-          add('ai', conf.autoApproved ? 'Payout executed' : 'Payout requires manual approval');
-        }
+    if (res.requiresApproval && res.pendingId) {
+      let receiver = res.receiver || null;
+      if (!receiver) {
+        receiver = prompt('PayPal email for ' + (res.vendor || 'this vendor') + '? No payment will move without a real receiver.');
+        if (!receiver) { add('ai', 'Cancelled: no receiver supplied, no payment sent.'); return; }
+      }
+      if (confirm('Confirm payout of $' + (res.amount_cents / 100).toFixed(2) + ' to ' + receiver + '?')) {
+        const conf = await fetch('/api/chat/confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pendingId: res.pendingId, receiver }) }).then(r => r.json());
+        add('ai', conf.autoApproved ? ('Payout sent, batch ' + (conf.batchId || '')) : ('Not sent: ' + (conf.error || conf.message || 'approval failed')));
       }
     }
   };

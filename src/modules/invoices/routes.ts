@@ -3,7 +3,7 @@ import { getPayPalAgent } from '../../services/paypal/agent-toolkit.js';
 import { db } from '../../db/init.js';
 import crypto from 'node:crypto';
 
-export const invoicesRouter = Router();
+export const invoicesRouter: Router = Router();
 
 invoicesRouter.post('/', async (req, res) => {
   try {

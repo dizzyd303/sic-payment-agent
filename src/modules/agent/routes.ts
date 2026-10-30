@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getPayPalAgent } from '../../services/paypal/agent-toolkit.js';
 
-export const agentRouter = Router();
+export const agentRouter: Router = Router();
 
 agentRouter.get('/tools', (_, res) => {
   try {

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createReceivable, chaseReceivable, listReceivables } from './service.js';
-export const receivablesRouter = Router();
+export const receivablesRouter: Router = Router();
 
 receivablesRouter.post('/', async (req,res)=> {
   try {

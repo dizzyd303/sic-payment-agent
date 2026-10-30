@@ -3,7 +3,7 @@ import { getPayPalAgent } from '../../services/paypal/agent-toolkit.js';
 import { db } from '../../db/init.js';
 import crypto from 'node:crypto';
 
-export const subscriptionsRouter = Router();
+export const subscriptionsRouter: Router = Router();
 
 subscriptionsRouter.post('/plans', async (req, res) => {
   try {
@@ -14,6 +14,14 @@ subscriptionsRouter.post('/plans', async (req, res) => {
     }
     
     const result = await agent.createSubscriptionPlan({ name, description, priceCents, billingCycle, currency });
+    const planStep = result.steps?.find((s: any) => s.tool === "create_subscription_plan");
+    const planOut = planStep?.output as Record<string, unknown> | undefined;
+    const planId = (planOut?.id || planOut?.plan_id) as string | undefined;
+    if (planId) {
+      const id = crypto.randomUUID();
+      await db.prepare("INSERT INTO subscription_plans (id, paypal_plan_id, name, description, amount_cents, currency, billing_cycle) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        .run(id, planId, name, description, priceCents, currency || "USD", billingCycle);
+    }
     res.json(result);
   } catch (e: any) {
     res.status(500).json({ error: e.message });

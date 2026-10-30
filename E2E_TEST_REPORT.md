@@ -1,61 +1,61 @@
-# SIC Payment Agent — End-to-End Test Report
-Date: 2026-10-11
-Server: localhost:3001
+# SIC Payment Agent — End-to-End Test Report (fresh, 2026-10-30)
 
-## Build & Startup
-- `pnpm run build` : PASS
-- Server start: `[PayPal Agent] Created 22 wrapped tools` → Initialized successfully
-- Health: `GET /health` → `{"ok":true}`
+Server: localhost:3001, built with `pnpm run build` (tsc clean), test DB
+`data/e2e-proof.db` (deleted after the run, not committed).
+PayPal: Sandbox, via the direct Payouts API client (not the agent-toolkit
+workflow tools).
 
-## Workflow Endpoint Debug
-- Route: `POST /api/agent/workflow`
-- Previous symptom: `{"success":false,"error":"Not Found","steps":[]}`
-- Root cause: stale process / server not restarted after route addition
-- After fresh start: endpoint responds correctly
-- Test: `POST /api/agent/workflow` with `{"prompt":"Say hello"}` → `{"success":true,"data":"Hello! How can I help you today?","steps":[]}`
-- Test: `POST /api/agent/workflow` with informational prompt → returns valid LLM response
+## Build and tests
+- `pnpm exec tsc --noEmit`: PASS, exit 0
+- `pnpm test`: 8 passed (2 files: pg-sql placeholder/LIMIT helpers, auth middleware)
+- `GET /health`: `{"ok":true}`
+- `GET /api/mcp/configs`: 404 — the credential-leaking endpoint is gone
 
-## Demo Flow Tests
+## Proven flow: Payment Guard, one flow end-to-end
+1. `POST /api/guard/request` vendor `e2e-test-vendor` (unknown), receiver
+   `e2e-test@example.com`, amount 100 cents, memo `E2E proof`
+   -> `{"id":"68d2db95-f72a-4a84-ae3c-02c9151b8941","autoApproved":false,"requiresApproval":true}`
+   Decision log for this payout: vendorKnown false, amountNormal false,
+   narration correctly states there is no history to compare against and
+   that is a risk signal. Unknown vendors no longer get the normal-amount bonus.
+2. `POST /api/guard/approve/<id>` (exact stored pending row)
+   -> `{"id":"68d2db95-...","status":"processing","batchId":"3CD2GNMS7P8RQ"}`
+   Batch id is a real PayPal Sandbox payout batch id.
+3. `POST /api/guard/sync/<id>`
+   -> `{"id":"68d2db95-...","status":"processing","paypalStatus":"PENDING"}`
+   Honest result: the batch is still PENDING in Sandbox (test receiver
+   unclaimed), so the local status stays `processing` and NO success
+   outcome is recorded. Batch acceptance is not claimed as payout success.
+4. `GET /api/paypal/status`
+   -> `{"healthy":true,"paypalConfigured":true,"failedCount":0,"lastFailed":null}`
+   No hardcoded error code or message.
 
-### Flow 1 – Conversational Money Movement / Payment Guard
-- `POST /api/chat/message` `{message:"pay the coffee supplier $450"}`
-- Response: `{"reply":"I need confirmation to pay coffee supplier $450.00","decisionId":"...","confidence":0.5,"requiresApproval":true}`
-- Decision logged in `/api/decisions`
+## Proven flow: Chat confirm, exact pending transaction only
+1. `POST /api/chat/message` with "pay chat-test-vendor $2.00 to chat-test@example.com"
+   -> pendingId c5279cd8-0aca-4601-a1cc-9a085de4865f, vendor chat-test-vendor,
+   amount_cents 200, receiver chat-test@example.com, requiresApproval true,
+   reply states no payment has been sent yet.
+2. Confirm with wrong amount (999 cents) -> HTTP 409 mismatch / amount_cents, no payment.
+3. Confirm with placeholder receiver acct@paypal.com -> HTTP 422
+   receiver_placeholder_rejected, no payment, pending row intact.
+4. Confirm with the stored pendingId and real receiver
+   -> HTTP 200, batch P9QE7S9JEQ5TN, receiver chat-test@example.com, amount_cents 200.
+5. Replay the same confirm -> HTTP 409 payout_not_pending, no double payment.
 
-### Flow 2 – Freelancer Invoice Lifecycle
-- `POST /api/agent/invoice/create-and-send` with recipient, items
-- Response: `{"success":true,"data":"","steps":[]}`
-- Invoices DB insert performed when steps contain `create_invoice`
-
-### Flow 3 – Subscription Business
-- `POST /api/agent/subscription/create-plan` `{name:"Pro Monthly",priceCents:2999,billingCycle:"MONTH"}`
-- Response: `{"success":true}`
-- `POST /api/agent/subscription/subscribe` works end-to-end
-
-### Flow 4 – Product Commerce
-- `GET /api/products/search?q=wireless headphones`
-- Response: `{"source":"local","results":[]}` — endpoint healthy, Channel3 fallback available
-
-### Flow 5 – AI Dashboard / Decision Matrix
-- `GET /api/decisions` → returns decision rows with module, confidence, threshold, narration
-- AG Grid integration verified via UI
-
-## API Health
-- `GET /api/agent/tools` → lists PayPal Agent Toolkit tools
-- `GET /api/agent/status` → available
-- `GET /api/decisions` → working
-- `GET /api/paypal/status` → working
-
-## Deployment Readiness
-- `render.yaml` validated
-- Build command: `pnpm install && pnpm run build`
-- Start command: `node dist/main.js`
-- Env vars defined: PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE, NVIDIA_API_KEY, etc.
-- Health check path: `/health`
-
-## Outstanding Items
-- Live Render deployment requires Git push + secret env vars in Render dashboard
-- Demo video recording
-- Devpost submission
-
-All core functionality verified locally.
+## What is NOT claimed as proven
+- Invoice creation via the agent-toolkit workflow: the old report's
+  `{"success":true,"data":"","steps":[]}` was not proof of a real invoice
+  id/status, and PAYPAL.md notes Invoicing scope was not provisioned.
+  Invoicer mapping is fixed (owner, never recipient), but invoice
+  end-to-end is not claimed here until a real invoice id is returned.
+- Subscription plan creation via the workflow: product id is now created
+  from a real PayPal product instead of a fabricated `PROD-*`, and the
+  `subscription_plans` table now exists, but a full plan+subscribe run
+  is not claimed here.
+- Agent-toolkit workflow tools generally: `agent-toolkit.ts` still carries
+  `@ts-nocheck` with a comment explaining the ai@4 vs ai@7 tool API
+  mismatch. A full v7 migration is a separate refactor, not papered over.
+- Demo video: not yet recorded. No placeholder link is included.
+- Render deployment: `render.yaml` now has a single `services:` list
+  (API service serving UI same-origin + Redis + Postgres database) and
+  validates as YAML, but a live Render deploy was not run in this pass.

@@ -1,4 +1,10 @@
 // @ts-nocheck
+// KNOWN LIMITATION, not a fix: this file was written against the ai@4
+// tool() API (parameters: z.object(...)). The installed ai@7 tool() is an
+// identity function expecting inputSchema, so a full v7 migration of the
+// 30+ wrapped tools is a separate refactor. The proven submission flow
+// (Payment Guard via the direct PayPal client) does not use these workflow
+// tools, so they are left as-is rather than papered over with as-any casts.
 import { PayPalAgentToolkit, PayPalWorkflows, ALL_TOOLS_ENABLED } from '@paypal/agent-toolkit/ai-sdk';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, tool, ToolSet } from 'ai';
@@ -116,10 +122,13 @@ class PayPalAgentService {
             note: args.note,
             payment_term: { term_type: 'NET_30', due_date: args.dueDays ? new Date(Date.now() + args.dueDays * 86400000).toISOString().split('T')[0] : undefined },
           },
-          invoicer: {
-            name: args.recipientName,
-            email_address: args.recipientEmail,
-          },
+          // Invoicer is the business (sender), never the recipient.
+          // When OWNER_EMAIL is unset the field is undefined so PayPal
+          // uses the merchant account invoicer instead of a wrong one.
+          invoicer: process.env.OWNER_EMAIL ? {
+            name: process.env.OWNER_NAME || "SIC Payment Agent",
+            email_address: process.env.OWNER_EMAIL,
+          } : undefined,
           primary_recipients: [{
             billing_info: {
               name: { given_name: args.recipientName.split(' ')[0], surname: args.recipientName.split(' ').slice(1).join(' ') || 'Customer' },
@@ -149,35 +158,44 @@ class PayPalAgentService {
     });
 
     this.wrappedTools.create_subscription_plan = tool({
-      description: 'Create a PayPal subscription plan',
+      description: "Create a PayPal subscription plan",
       parameters: z.object({
-        name: z.string().describe('Plan name'),
-        description: z.string().describe('Plan description'),
-        priceCents: z.number().describe('Price in cents'),
-        billingCycle: z.enum(['MONTH', 'YEAR', 'WEEK', 'DAY']).describe('Billing cycle'),
-        currency: z.string().default('USD').describe('Currency'),
+        name: z.string().describe("Plan name"),
+        description: z.string().describe("Plan description"),
+        priceCents: z.number().describe("Price in cents"),
+        billingCycle: z.enum(["MONTH", "YEAR", "WEEK", "DAY"]).describe("Billing cycle"),
+        currency: z.string().default("USD").describe("Currency"),
       }),
       execute: async (args: any) => {
+        // A plan requires a real PayPal product id. Create the product
+        // first and use the id PayPal returns; never fabricate PROD-*.
+        const product = await rawTools.create_product.execute({
+          name: args.name,
+          description: args.description,
+          type: "SERVICE",
+        });
+        const productId = product?.id || product?.product_id || product?.data?.id;
+        if (!productId) throw new Error("create_product did not return a product id; subscription plan was not created");
         return rawTools.create_subscription_plan.execute({
           name: args.name,
           description: args.description,
-          product_id: `PROD-${Date.now()}`,
+          product_id: productId,
           billing_cycles: [{
             frequency: { interval_unit: args.billingCycle, interval_count: 1 },
-            tenure_type: 'REGULAR',
+            tenure_type: "REGULAR",
             sequence: 1,
             total_cycles: 0,
             pricing_scheme: {
-              fixed_price: { value: (args.priceCents / 100).toFixed(2), currency_code: args.currency || 'USD' }
+              fixed_price: { value: (args.priceCents / 100).toFixed(2), currency_code: args.currency || "USD" }
             }
           }],
           payment_preferences: {
             auto_bill_outstanding: true,
-            setup_fee: { value: '0', currency_code: args.currency || 'USD' },
-            setup_fee_failure_action: 'CONTINUE',
+            setup_fee: { value: "0", currency_code: args.currency || "USD" },
+            setup_fee_failure_action: "CONTINUE",
             payment_failure_threshold: 3,
           },
-          taxes: { percentage: '0', inclusive: false },
+          taxes: { percentage: "0", inclusive: false },
         });
       },
     });

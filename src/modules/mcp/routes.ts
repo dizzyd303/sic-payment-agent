@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { getMCPClient, initializeMCP, PAYPAL_MCP_CONFIGS } from '../../services/paypal/mcp-client.js';
+import { getMCPClient, initializeMCP } from '../../services/paypal/mcp-client.js';
 
-export const mcpRouter = Router();
+export const mcpRouter: Router = Router();
 
 mcpRouter.get('/status', (_, res) => {
   const client = getMCPClient();
@@ -55,11 +55,4 @@ mcpRouter.post('/tools/:name', async (req, res) => {
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
-});
-
-mcpRouter.get('/configs', (_, res) => {
-  res.json({ 
-    remote: PAYPAL_MCP_CONFIGS.remote,
-    local: PAYPAL_MCP_CONFIGS.local,
-  });
 });

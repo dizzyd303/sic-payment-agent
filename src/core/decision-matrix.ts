@@ -26,7 +26,7 @@ export class DecisionMatrix {
     const id = crypto.randomUUID();
     const narration = await this.generateNarration(ctx, confidence, threshold, decision);
     db.prepare(`INSERT INTO decisions (id, module, action_type, context_json, features_json, confidence, threshold, decision, requires_approval, created_at, narration) VALUES (?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?)`).run(
-      id, ctx.module, ctx.action, JSON.stringify(ctx), JSON.stringify(ctx.features), confidence, threshold, decision, requiresApproval ? 1 : 0, narration
+      id, ctx.module, ctx.action, JSON.stringify(ctx), JSON.stringify(ctx.features), confidence, threshold, decision, requiresApproval, narration
     );
     return { decisionId: id, confidence, threshold, decision, requiresApproval, reasons: [] };
   }
@@ -53,7 +53,10 @@ Return a concise reason why the confidence is what it is.`;
   }
 
   private score(ctx: DecisionContext): number {
-    // heuristic placeholder - modules can override
+    // Deterministic payment-risk policy, NOT an LLM-derived confidence.
+    // The LLM only writes the plain-English narration (generateNarration);
+    // it never changes the score. Thresholds are fixed (env/defaults) and
+    // recordOutcome() only logs outcomes; no threshold adaptation exists yet.
     let score = 0.5;
     if (ctx.module === 'payment-guard') {
       const known = ctx.features.vendorKnown ? 0.3 : 0;
@@ -71,6 +74,8 @@ Return a concise reason why the confidence is what it is.`;
     return Math.max(0, Math.min(1, score));
   }
 
+  // Fixed thresholds. Adaptive learning is NOT implemented: outcomes are
+  // recorded for audit, but thresholdFor() does not read them.
   private thresholdFor(module: string): number {
     const defaults = { 'receivables':0.6, 'payment-guard': parseFloat(process.env.CONFIDENCE_THRESHOLD||'0.7'), 'conversational':0.75 };
     return defaults[module as keyof typeof defaults] ?? 0.7;

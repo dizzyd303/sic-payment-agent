@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Pool, PoolClient } from 'pg';
+import { toPgSql, withLimit1 } from './pg-sql.js';
 
 // Database abstraction supporting both SQLite (dev) and PostgreSQL (prod)
 const isProduction = process.env.NODE_ENV === 'production';
@@ -47,14 +48,17 @@ function getPgPool(): Pool {
   return pgPool!;
 }
 
+// better-sqlite3 cannot bind JS booleans; code passes true/false so the
+// Postgres adapter gets real booleans, and this adapter converts to 1/0.
+const toSqliteParams = (params: any[]) => params.map((v) => (typeof v === "boolean" ? (v ? 1 : 0) : v));
 function createSQLiteStatement(db: ReturnType<typeof Database>, sql: string): Statement {
   const stmt = db.prepare(sql);
   return {
-    run: (...params: any[]) => Promise.resolve(stmt.run(...params)),
-    get: (...params: any[]) => Promise.resolve(stmt.get(...params)),
-    all: (...params: any[]) => Promise.resolve(stmt.all(...params)),
+    run: (...params: any[]) => Promise.resolve(stmt.run(...toSqliteParams(params))),
+    get: (...params: any[]) => Promise.resolve(stmt.get(...toSqliteParams(params))),
+    all: (...params: any[]) => Promise.resolve(stmt.all(...toSqliteParams(params))),
     iterate: async function* (...params: any[]) {
-      for (const row of stmt.iterate(...params)) {
+      for (const row of stmt.iterate(...toSqliteParams(params))) {
         yield row;
       }
     },
@@ -62,11 +66,14 @@ function createSQLiteStatement(db: ReturnType<typeof Database>, sql: string): St
 }
 
 function createPgStatement(pool: Pool, sql: string): Statement {
+  const pgSql = toPgSql(sql);
   return {
     run: async (...params: any[]) => {
       const client = await pool.connect();
       try {
-        const result = await client.query(sql, params);
+        const trimmed = pgSql.trim().toUpperCase();
+        const withReturning = trimmed.startsWith("INSERT") && !/RETURNING\s/i.test(pgSql) ? pgSql + " RETURNING id" : pgSql;
+        const result = await client.query(withReturning, params);
         return { changes: result.rowCount ?? 0, lastInsertRowid: result.rows[0]?.id ?? 0 };
       } finally {
         client.release();
@@ -75,7 +82,9 @@ function createPgStatement(pool: Pool, sql: string): Statement {
     get: async (...params: any[]) => {
       const client = await pool.connect();
       try {
-        const result = await client.query(sql + ' LIMIT 1', params);
+        // Only append LIMIT 1 when the query does not already have a LIMIT.
+        const finalSql = withLimit1(pgSql);
+        const result = await client.query(finalSql, params);
         return result.rows[0] ?? null;
       } finally {
         client.release();
@@ -84,7 +93,7 @@ function createPgStatement(pool: Pool, sql: string): Statement {
     all: async (...params: any[]) => {
       const client = await pool.connect();
       try {
-        const result = await client.query(sql, params);
+        const result = await client.query(pgSql, params);
         return result.rows;
       } finally {
         client.release();
@@ -93,7 +102,7 @@ function createPgStatement(pool: Pool, sql: string): Statement {
     iterate: async function* (...params: any[]) {
       const client = await pool.connect();
       try {
-        const result = await client.query(sql, params);
+        const result = await client.query(pgSql, params);
         for (const row of result.rows) {
           yield row;
         }
@@ -164,7 +173,7 @@ export async function initDatabase() {
         status TEXT NOT NULL,
         paypal_payout_batch_id TEXT,
         confidence REAL,
-        requires_approval INTEGER DEFAULT 0,
+        requires_approval BOOLEAN NOT NULL DEFAULT FALSE,
         approved_by TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         notes TEXT,
@@ -219,6 +228,17 @@ export async function initDatabase() {
         currency TEXT NOT NULL DEFAULT 'USD',
         billing_cycle TEXT NOT NULL,
         next_billing_date DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS subscription_plans (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        paypal_plan_id TEXT UNIQUE NOT NULL,
+        paypal_product_id TEXT,
+        name TEXT NOT NULL,
+        description TEXT,
+        amount_cents INTEGER NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'USD',
+        billing_cycle TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS products (
@@ -310,6 +330,17 @@ export async function initDatabase() {
         currency TEXT NOT NULL DEFAULT 'USD',
         billing_cycle TEXT NOT NULL,
         next_billing_date TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS subscription_plans (
+        id TEXT PRIMARY KEY,
+        paypal_plan_id TEXT UNIQUE NOT NULL,
+        paypal_product_id TEXT,
+        name TEXT NOT NULL,
+        description TEXT,
+        amount_cents INTEGER NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'USD',
+        billing_cycle TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS products (

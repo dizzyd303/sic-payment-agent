@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getAPIMaticService } from '../../services/apimatic/client.js';
 
-export const apimaticRouter = Router();
+export const apimaticRouter: Router = Router();
 
 apimaticRouter.get('/context', async (_, res) => {
   try {

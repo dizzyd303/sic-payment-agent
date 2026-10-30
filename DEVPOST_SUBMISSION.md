@@ -5,19 +5,18 @@
 **Tagline:** Every financial decision AI-scored, confidence-gated, executed on PayPal rails
 
 ## Description
-SIC Payment Agent is an AI-native payment platform built for PayPal AI Hackathon 2026. Natural language becomes structured intent, scored by a Decision Matrix, confidence-gated for safety, and executed via PayPal Agent Toolkit, MCP, and APIMatic. Targets 8+ prize categories with AG Grid self-serve dashboards, Channel3 product catalog, and instant API context.
+SIC Payment Agent is a payment-guard demo built for PayPal AI Hackathon 2026. The proven flow is: natural language becomes a stored pending payout, scored by a deterministic decision policy, confidence-gated for safety, and executed via the PayPal Payouts API on Sandbox, with the real batch status retrieved and recorded. PayPal Agent Toolkit workflow tools, MCP, and APIMatic are additional surfaces in the codebase; they are not claimed as proven end-to-end in this submission.
 
 ## Live Demo
-- API: https://sic-payment-agent-api.onrender.com
-- UI: https://sic-payment-agent-ui.onrender.com
+- API and UI (single service, UI served same-origin): https://sic-payment-agent-api.onrender.com
 - Health: https://sic-payment-agent-api.onrender.com/health
 
 ## GitHub Repo
 Public repo with MIT license, README, JUDGE_RUNBOOK, DEMO_VIDEO_SCRIPT
 
 ## Demo Video
-YouTube URL: <to be added after recording>
-Duration: 3:00
+YouTube URL: NOT YET RECORDED - do not submit with a placeholder link.
+Planned duration: under 3:00, one Payment Guard flow end-to-end (see README Demo Video section).
 
 ## Tech Stack
 - @paypal/agent-toolkit
