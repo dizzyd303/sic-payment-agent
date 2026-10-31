@@ -137,16 +137,6 @@ Demo video: https://youtu.be/V8Li41eCue0 — 1:39, captioned, one flow end-to-en
 
 ## Screenshots
 
-Clean-DB UI run, 10/31/2026, 1:02:37 PM, one $200 plumber payout, pending:
-
-![Chat, pay the plumber $200](docs/ui-chat.png)
-
-![Dashboard, clean Decision Stream](docs/ui-dashboard.png)
-
-![Approvals, $200 pending](docs/ui-approvals.png)
-
-![Decisions, one escalate](docs/ui-decisions.png)
-
 Terminal demo run, from the video recording, same guard flow ending in PayPal SUCCESS:
 
 ![Server start](docs/demo-server-start.png)
