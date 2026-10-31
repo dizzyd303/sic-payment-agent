@@ -4,6 +4,8 @@
 
 SIC Payment Agent is a payment guard for agentic commerce. Natural language becomes a stored pending payout, scored by a deterministic decision policy, gated for human approval, and executed on PayPal Payouts in Sandbox, with the real batch status retrieved and recorded.
 
+The LLM parses free-form natural language and generates audit-ready narrations that explain deterministic decisions.
+
 ## What it does
 
 1. **Chat** — Say "pay the plumber $200" and you get a pending payout. No payment has been sent yet.
