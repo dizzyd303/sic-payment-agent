@@ -52,6 +52,18 @@ pnpm dev
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    Chat[Chat message] --> Pending[Stored pending payout]
+    Pending --> Guard[Deterministic guard score]
+    Guard --> Approve{Human approval?}
+    Approve -->|Changed amount, vendor, memo, or receiver| Blocked[Blocked]
+    Approve -->|Exact stored payout| PayPal[PayPal Payouts, Sandbox]
+    PayPal --> Sync[Sync polls PayPal]
+    Sync --> Audit[Outcome recorded, audit trail]
+```
+
+
 ```
 SIC Payment Agent
 UI: Vanilla JS (no React build step)
@@ -122,6 +134,18 @@ CONFIDENCE_THRESHOLD=0.7
 ## Demo Video
 
 Demo video: https://youtu.be/V8Li41eCue0 — 1:39, captioned, one flow end-to-end: chat message → pending → blocked changes → approve the exact pending payout → execute on PayPal Sandbox → sync to real status.
+
+## Screenshots
+
+Terminal demo run, from the video recording. Server start first, then the full guard flow ending in PayPal SUCCESS:
+
+![Server start](docs/demo-server-start.png)
+
+![Full guard flow ending in PayPal SUCCESS](docs/demo-flow-success.png)
+
+## For judges: Sandbox credentials
+
+No PayPal or LLM credentials are bundled with this repo. To run it yourself, use your own free PayPal developer account for Sandbox credentials, set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET in .env, and set NVIDIA_API_KEY or run Ollama locally. Without those, PayPal calls fail and no batch id is returned.
 
 ## License
 
