@@ -7,7 +7,7 @@ workflow tools).
 
 ## Build and tests
 - `pnpm exec tsc --noEmit`: PASS, exit 0
-- `pnpm test`: 8 passed (2 files: pg-sql placeholder/LIMIT helpers, auth middleware)
+- `pnpm test`: 13 passed (payment-guard 5, pg-sql 4, auth 4)
 - `GET /health`: `{"ok":true}`
 - `GET /api/mcp/configs`: 404 — the credential-leaking endpoint is gone
 
@@ -55,7 +55,7 @@ workflow tools).
 - Agent-toolkit workflow tools generally: `agent-toolkit.ts` still carries
   `@ts-nocheck` with a comment explaining the ai@4 vs ai@7 tool API
   mismatch. A full v7 migration is a separate refactor, not papered over.
-- Demo video: not yet recorded. No placeholder link is included.
+- Demo video: https://youtu.be/V8Li41eCue0 - 1:39, captioned, one Payment Guard flow end-to-end.
 - Render deployment: `render.yaml` now has a single `services:` list
   (API service serving UI same-origin + Redis + Postgres database) and
   validates as YAML, but a live Render deploy was not run in this pass.

@@ -1,10 +1,9 @@
 # Render Deployment Checklist
 
 ## Pre-Deploy
-- [x] `pnpm run build` passes
-- [x] `render.yaml` present and valid
-- [x] `.env` contains required vars locally
-- [x] `E2E_TEST_REPORT.md` created
+- [ ] `pnpm run build` passes (Node 22 required — better-sqlite3 does not run on Node 24)
+- [ ] `render.yaml` present and valid
+- [ ] `.env` contains required vars locally
 
 ## Render Service Configuration
 Service: `sic-payment-agent-api`
@@ -12,7 +11,7 @@ Service: `sic-payment-agent-api`
 - Build Command: `pnpm install && pnpm run build`
 - Start Command: `node dist/main.js`
 - Port: 10000
-- Health Check: `/health`
+- Health Check: `/health` (exists in `src/main.ts`, returns `{"ok":true}`)
 
 Environment Variables to set in Render:
 - `NODE_ENV=production`
@@ -21,21 +20,14 @@ Environment Variables to set in Render:
 - `PAYPAL_CLIENT_SECRET` = from sandbox
 - `PAYPAL_MODE=sandbox`
 - `PAYPAL_BASE_URL=https://api-m.sandbox.paypal.com`
-- `NVIDIA_API_KEY` = nvapi-...
+- `NVIDIA_API_KEY` = from NVIDIA
 - `DATABASE_URL` = from `sic-payment-db`
 - `REDIS_URL` = from `sic-payment-redis`
-- Optional: `TAVILY_API_KEY`, `CHANNEL3_API_KEY`, `APIMATIC_API_KEY`
 
-## Post-Deploy Verification
+## Post-Deploy Verification (proven flow only)
 - [ ] `https://sic-payment-agent-api.onrender.com/health` returns `{"ok":true}`
-- [ ] `POST /api/agent/workflow` returns success
-- [ ] `POST /api/chat/message` returns decision
-- [ ] UI loads at static site URL
-- [ ] AG Grid dashboard loads
-- [ ] MCP and APIMatic tabs accessible
+- [ ] `POST /api/chat/message` returns a pending payout, no payment sent yet
+- [ ] `POST /api/chat/confirm` with the exact stored payout returns processing with a PayPal batch id
+- [ ] `POST /api/guard/sync/:id` returns the real PayPal batch status
 
-## GitHub Actions / CI
-- Ensure repo is public with MIT license
-- README.md, JUDGE_RUNBOOK.md, DEMO_VIDEO_SCRIPT.md present
-
-Ready for push to `main` to trigger auto-deploy.
+Note, 2026-10-31: the live Render health endpoint was checked and returned "Not Found" at that time, even though `/health` exists in the code. Do not claim the live Render deployment works until a post-deploy check above passes after a fresh deploy.
