@@ -139,9 +139,6 @@ Demo video: https://youtu.be/V8Li41eCue0 — 1:39, captioned, one flow end-to-en
 
 Terminal demo run, from the video recording. Server start first, then the full guard flow ending in PayPal SUCCESS:
 
-Dashboard UI, same server, Decision Stream and Command Input:
-
-![Dashboard UI, Decision Stream](docs/dashboard-ui.png)
 
 ![Server start](docs/demo-server-start.png)
 
