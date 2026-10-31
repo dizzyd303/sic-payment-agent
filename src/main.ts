@@ -2,19 +2,11 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { receivablesRouter } from './modules/receivables/routes.js';
 import { paymentGuardRouter } from './modules/payment-guard/routes.js';
 import { conversationalRouter } from './modules/conversational/routes.js';
 import { initDatabase } from './db/init.js';
 import { db } from './db/init.js';
-import { initializePayPalAgent } from './services/paypal/agent-toolkit.js';
-import { agentRouter } from './modules/agent/routes.js';
-import { invoicesRouter } from './modules/invoices/routes.js';
-import { subscriptionsRouter } from './modules/subscriptions/routes.js';
-import { productsRouter } from './modules/products/routes.js';
-import { mcpRouter } from './modules/mcp/routes.js';
 import { requireAdminForMutations } from './middleware/auth.js';
-import { apimaticRouter } from './modules/apimatic/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,20 +18,6 @@ app.use('/api', requireAdminForMutations);
 app.use(express.json());
 
 await initDatabase();
-
-// Initialize PayPal Agent Toolkit
-const paypalConfig = {
-  clientId: process.env.PAYPAL_CLIENT_ID ?? '',
-  clientSecret: process.env.PAYPAL_CLIENT_SECRET ?? '',
-  environment: (process.env.PAYPAL_MODE as 'sandbox' | 'production') ?? 'sandbox',
-};
-
-if (paypalConfig.clientId && paypalConfig.clientSecret) {
-  initializePayPalAgent(paypalConfig);
-  console.log('[PayPal Agent] Initialized successfully');
-} else {
-  console.warn('[PayPal Agent] Credentials not configured - agent features disabled');
-}
 
 app.get('/health', (_, res) => res.json({ ok: true }));
 app.get('/api/decisions', async (_, res) => {
@@ -66,15 +44,8 @@ app.get('/api/paypal/status', async (_, res) => {
   });
 });
 
-app.use('/api/receivables', receivablesRouter);
 app.use('/api/guard', paymentGuardRouter);
 app.use('/api/chat', conversationalRouter);
-app.use('/api/agent', agentRouter);
-app.use('/api/invoices', invoicesRouter);
-app.use('/api/subscriptions', subscriptionsRouter);
-app.use('/api/products', productsRouter);
-app.use('/api/mcp', mcpRouter);
-app.use('/api/apimatic', apimaticRouter);
 
 // Serve UI
 app.use(express.static(path.join(__dirname, '../public')));

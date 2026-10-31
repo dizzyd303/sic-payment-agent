@@ -154,17 +154,6 @@ export async function initDatabase() {
   if (isProduction && databaseUrl?.startsWith('postgres')) {
     // PostgreSQL schema
     await client.exec(`
-      CREATE TABLE IF NOT EXISTS receivables (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        customer_name TEXT NOT NULL,
-        amount_cents INTEGER NOT NULL,
-        currency TEXT NOT NULL,
-        due_date DATE,
-        status TEXT NOT NULL DEFAULT 'open',
-        paypal_order_id TEXT UNIQUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        notes TEXT
-      );
       CREATE TABLE IF NOT EXISTS payouts (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         vendor_name TEXT NOT NULL,
@@ -179,12 +168,6 @@ export async function initDatabase() {
         notes TEXT,
         receiver TEXT,
         decision_id TEXT
-      );
-      CREATE TABLE IF NOT EXISTS chase_log (
-        id SERIAL PRIMARY KEY,
-        receivable_id UUID NOT NULL REFERENCES receivables(id),
-        chased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        channel TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS decisions (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -205,68 +188,10 @@ export async function initDatabase() {
         outcome TEXT NOT NULL,
         observed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-      CREATE TABLE IF NOT EXISTS invoices (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        paypal_invoice_id TEXT UNIQUE,
-        recipient_email TEXT NOT NULL,
-        recipient_name TEXT NOT NULL,
-        amount_cents INTEGER NOT NULL,
-        currency TEXT NOT NULL DEFAULT 'USD',
-        status TEXT NOT NULL DEFAULT 'draft',
-        due_date DATE,
-        notes TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS subscriptions (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        paypal_subscription_id TEXT UNIQUE,
-        paypal_plan_id TEXT NOT NULL,
-        customer_email TEXT NOT NULL,
-        customer_name TEXT,
-        status TEXT NOT NULL,
-        amount_cents INTEGER NOT NULL,
-        currency TEXT NOT NULL DEFAULT 'USD',
-        billing_cycle TEXT NOT NULL,
-        next_billing_date DATE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS subscription_plans (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        paypal_plan_id TEXT UNIQUE NOT NULL,
-        paypal_product_id TEXT,
-        name TEXT NOT NULL,
-        description TEXT,
-        amount_cents INTEGER NOT NULL,
-        currency TEXT NOT NULL DEFAULT 'USD',
-        billing_cycle TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS products (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        paypal_product_id TEXT UNIQUE,
-        name TEXT NOT NULL,
-        description TEXT,
-        type TEXT NOT NULL,
-        category TEXT,
-        image_url TEXT,
-        home_url TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
     `);
   } else {
     // SQLite schema (existing)
     await client.exec(`
-      CREATE TABLE IF NOT EXISTS receivables (
-        id TEXT PRIMARY KEY,
-        customer_name TEXT NOT NULL,
-        amount_cents INTEGER NOT NULL,
-        currency TEXT NOT NULL,
-        due_date TEXT,
-        status TEXT NOT NULL DEFAULT 'open',
-        paypal_order_id TEXT UNIQUE,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        notes TEXT
-      );
       CREATE TABLE IF NOT EXISTS payouts (
         id TEXT PRIMARY KEY,
         vendor_name TEXT NOT NULL,
@@ -279,13 +204,6 @@ export async function initDatabase() {
         approved_by TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         notes TEXT
-      );
-      CREATE TABLE IF NOT EXISTS chase_log (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        receivable_id TEXT NOT NULL,
-        chased_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        channel TEXT NOT NULL,
-        FOREIGN KEY(receivable_id) REFERENCES receivables(id)
       );
       CREATE TABLE IF NOT EXISTS decisions (
         id TEXT PRIMARY KEY,
@@ -306,53 +224,6 @@ export async function initDatabase() {
         outcome TEXT NOT NULL,
         observed_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(decision_id) REFERENCES decisions(id)
-      );
-      CREATE TABLE IF NOT EXISTS invoices (
-        id TEXT PRIMARY KEY,
-        paypal_invoice_id TEXT UNIQUE,
-        recipient_email TEXT NOT NULL,
-        recipient_name TEXT NOT NULL,
-        amount_cents INTEGER NOT NULL,
-        currency TEXT NOT NULL DEFAULT 'USD',
-        status TEXT NOT NULL DEFAULT 'draft',
-        due_date TEXT,
-        notes TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS subscriptions (
-        id TEXT PRIMARY KEY,
-        paypal_subscription_id TEXT UNIQUE,
-        paypal_plan_id TEXT NOT NULL,
-        customer_email TEXT NOT NULL,
-        customer_name TEXT,
-        status TEXT NOT NULL,
-        amount_cents INTEGER NOT NULL,
-        currency TEXT NOT NULL DEFAULT 'USD',
-        billing_cycle TEXT NOT NULL,
-        next_billing_date TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS subscription_plans (
-        id TEXT PRIMARY KEY,
-        paypal_plan_id TEXT UNIQUE NOT NULL,
-        paypal_product_id TEXT,
-        name TEXT NOT NULL,
-        description TEXT,
-        amount_cents INTEGER NOT NULL,
-        currency TEXT NOT NULL DEFAULT 'USD',
-        billing_cycle TEXT NOT NULL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS products (
-        id TEXT PRIMARY KEY,
-        paypal_product_id TEXT UNIQUE,
-        name TEXT NOT NULL,
-        description TEXT,
-        type TEXT NOT NULL,
-        category TEXT,
-        image_url TEXT,
-        home_url TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
     `);
     

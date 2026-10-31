@@ -3,7 +3,7 @@ import { llmComplete } from '../services/llm/provider.js';
 import crypto from 'node:crypto';
 
 export type DecisionContext = {
-  module: 'receivables' | 'payment-guard' | 'conversational';
+  module: 'payment-guard' | 'conversational';
   action: string;
   features: Record<string, number | string | boolean>;
 };
@@ -98,21 +98,13 @@ Return a concise reason why the confidence is what it is.`;
       const amountNormal = ctx.features.amountNormal ? 0.1 : -0.2;
       score = 0.5 + known + amountNormal;
     }
-    if (ctx.module === 'receivables') {
-      const days = Number(ctx.features.daysOverdue ?? 0);
-      const weeks = days / 7;
-      const overdueScore = Math.min(0.3, weeks * 0.1);
-      const priorSuccess = ctx.features.priorChaseSuccess ? 0.1 : 0;
-      const neverPays = ctx.features.neverPays ? -0.2 : 0;
-      score = 0.5 + overdueScore + priorSuccess + neverPays;
-    }
     return Math.max(0, Math.min(1, score));
   }
 
   // Fixed thresholds. Adaptive learning is NOT implemented: outcomes are
   // recorded for audit, but thresholdFor() does not read them.
   private thresholdFor(module: string): number {
-    const defaults = { 'receivables':0.6, 'payment-guard': parseFloat(process.env.CONFIDENCE_THRESHOLD||'0.7'), 'conversational':0.75 };
+    const defaults = { 'payment-guard': parseFloat(process.env.CONFIDENCE_THRESHOLD||'0.7'), 'conversational':0.75 };
     return defaults[module as keyof typeof defaults] ?? 0.7;
   }
 }
