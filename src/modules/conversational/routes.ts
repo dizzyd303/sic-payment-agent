@@ -9,32 +9,21 @@ conversationalRouter.post("/message", async (req, res) => {
   res.json(await handleMessage(message));
 });
 
-// Confirm approves ONLY the stored pending payout identified by pendingId.
-// Caller-supplied vendor/amount, if present, must match the stored row.
-// Receiver must be supplied here or already stored on the row; there is
-// no placeholder, no dummy receiver, and no new transaction is created.
+// Confirm only approves the stored pending payout. Supplied details must match it.
 conversationalRouter.post("/confirm", async (req, res) => {
   const { pendingId, receiver, vendor, amount_cents, memo } = req.body;
   if (!pendingId) return res.status(400).json({ error: "pendingId_required", message: "Confirm requires the pendingId returned by /message" });
   const row = await db.prepare("SELECT * FROM payouts WHERE id=?").get(pendingId) as { vendor_name: string; amount_cents: number; status: string; receiver: string | null; notes: string | null; currency: string } | undefined;
   if (!row) return res.status(404).json({ error: "not_found" });
   if (row.status !== "pending") return res.status(409).json({ error: "payout_not_pending", status: row.status });
-  // Vendor comparison is case-insensitive on both sides: the guard path
-  // stores vendor_name as given, the chat path stores it lowercased.
+  // Vendor names are compared case-insensitively.
   if (vendor && vendor.toString().trim().toLowerCase() !== row.vendor_name.toString().trim().toLowerCase()) return res.status(409).json({ error: "mismatch", field: "vendor" });
-  // Amount check must run whenever amount_cents is present, including 0:
-  // the old `amount_cents &&` check skipped the mismatch check for 0
-  // (second review item 2). Non-integer amounts are also a mismatch.
+  // Check amount whenever it is supplied, including 0.
   if (amount_cents !== undefined && amount_cents !== null && (!Number.isInteger(Number(amount_cents)) || Number(amount_cents) !== row.amount_cents)) return res.status(409).json({ error: "mismatch", field: "amount_cents" });
-  // Memo is part of the locked snapshot: a supplied memo that differs
-  // from the stored notes is rejected, not silently written over it.
-  // A changed payout needs a fresh pending payout and evaluation.
+  // A supplied memo must match the stored one.
   if (memo !== undefined && memo !== null && memo.toString() !== (row.notes ?? "")) return res.status(409).json({ error: "mismatch", field: "memo" });
   const finalReceiver = (receiver?.toString().trim() || row.receiver || "").trim();
   if (!finalReceiver) return res.status(400).json({ error: "receiver_required", message: "Supply the PayPal email for this vendor; no placeholder will be used" });
-  // Receiver binding itself is enforced inside approvePendingPayout:
-  // a supplied receiver that differs from a stored receiver is a 409,
-  // not an override.
   try {
     const result = await approvePendingPayout(pendingId, finalReceiver);
     res.json({ ...result, autoApproved: true });

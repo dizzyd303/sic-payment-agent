@@ -24,9 +24,7 @@ function requiresApprovalReason(confidence: number, threshold: number): string {
 }
 
 export class DecisionMatrix {
-  // Deterministic policy reasons, sourced from the actual checks, not
-  // from LLM narration. Narration is display text only; these reasons are
-  // the risk explanation the UI should show (second review item 3).
+  // Reasons come from the checks, not from the narration.
   private reasonsFor(ctx: DecisionContext, confidence: number, threshold: number): string[] {
     const reasons: string[] = [];
     if (ctx.module === 'payment-guard') {
@@ -88,10 +86,7 @@ Return a concise reason why the confidence is what it is.`;
   }
 
   private score(ctx: DecisionContext): number {
-    // Deterministic payment-risk policy, NOT an LLM-derived confidence.
-    // The LLM only writes the plain-English narration (generateNarration);
-    // it never changes the score. Thresholds are fixed (env/defaults) and
-    // recordOutcome() only logs outcomes; no threshold adaptation exists yet.
+    // The LLM only writes the narration. It never changes the score.
     let score = 0.5;
     if (ctx.module === 'payment-guard') {
       const known = ctx.features.vendorKnown ? 0.3 : 0;
@@ -101,8 +96,7 @@ Return a concise reason why the confidence is what it is.`;
     return Math.max(0, Math.min(1, score));
   }
 
-  // Fixed thresholds. Adaptive learning is NOT implemented: outcomes are
-  // recorded for audit, but thresholdFor() does not read them.
+  // Thresholds are fixed. Outcomes are logged, they don't change thresholds.
   private thresholdFor(module: string): number {
     const defaults = { 'payment-guard': parseFloat(process.env.CONFIDENCE_THRESHOLD||'0.7'), 'conversational':0.75 };
     return defaults[module as keyof typeof defaults] ?? 0.7;

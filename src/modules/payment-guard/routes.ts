@@ -56,8 +56,7 @@ paymentGuardRouter.post("/reject/:id", async (req, res) => {
   const { id } = req.params;
   const stmt = db.prepare("SELECT * FROM payouts WHERE id=?");
   const row = await stmt.get(id) as { decision_id: string | null; status: string } | undefined;
-  // Pending-only (Fix 4, second review item 4b): rejecting must not
-  // overwrite a completed / processing / already-rejected payout.
+  // Only a pending payout can be rejected.
   if (!row) return res.status(404).json({ error: "not found" });
   if (row.status !== "pending") return res.status(409).json({ error: "payout_not_pending", status: row.status });
   if (row.decision_id) {

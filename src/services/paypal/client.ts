@@ -33,7 +33,7 @@ class PayPalClient {
       }
     );
     this.token = res.data.access_token;
-    // refresh 5 min early
+    // Refresh the token 5 minutes early.
     this.tokenExpiresAt = Date.now() + (res.data.expires_in - 300) * 1000;
     return this.token;
   }
@@ -48,26 +48,6 @@ class PayPalClient {
   private async authHeaders() {
     const token = await this.getToken();
     return { Authorization: `Bearer ${token}` };
-  }
-
-  // Orders v2
-  async createOrder(amountCents: number, currency = 'USD') {
-    const headers = await this.authHeaders();
-    const res = await axios.post(
-      `${this.baseUrl}/v2/checkout/orders`,
-      {
-        intent: 'CAPTURE',
-        purchase_units: [{ amount: { currency_code: currency, value: (amountCents/100).toFixed(2) } }]
-      },
-      { headers: { 'Content-Type': 'application/json', ...headers } }
-    );
-    return res.data;
-  }
-
-  async getOrder(orderId: string) {
-    const headers = await this.authHeaders();
-    const res = await axios.get(`${this.baseUrl}/v2/checkout/orders/${orderId}`, { headers });
-    return res.data;
   }
 
   // Payouts v1
@@ -89,7 +69,7 @@ class PayPalClient {
   }
 
   async getPayoutBatch(batchId: string) {
-    // Payouts GET uses api.sandbox host per card quirk
+    // Payouts GET uses the api.sandbox host.
     const token = await this.getToken();
     const res = await axios.get(`https://api.sandbox.paypal.com/v1/payments/payouts/${batchId}`, {
       headers: { Authorization: `Bearer ${token}` }

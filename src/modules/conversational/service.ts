@@ -17,9 +17,7 @@ export async function handleMessage(message: string) {
   const amountCents = intent.amount_cents ?? intent.amount ?? 0;
   const vendor = (intent.vendor || "").toString().trim().toLowerCase();
   const parseConf = intent.confidence ?? 0.3;
-  // No pending row is created for a non-integer, non-positive, or
-  // over-cap amount: the same server-side cap as the guard path applies
-  // here ($10,000 / 1,000,000 cents by default, MAX_PAYOUT_CENTS override).
+  // No pending row for a bad amount. Cap is $10,000 unless MAX_PAYOUT_CENTS is set.
   const maxCents = (() => { const p = Number(process.env.MAX_PAYOUT_CENTS); return Number.isInteger(p) && p > 0 ? p : 1_000_000; })();
   const parseFailed = !hasPaymentKeyword || vendor === "unknown" || !vendor || !Number.isInteger(amountCents) || amountCents <= 0 || amountCents > maxCents;
   if (parseFailed) {
@@ -32,8 +30,7 @@ export async function handleMessage(message: string) {
     action: "pay",
     features: { vendor, amount: amountCents / 100, amount_cents: amountCents, parseConfidence: parseConf },
   });
-  // Persist the EXACT pending transaction. Chat confirm can only approve
-  // this row, with its stored vendor/amount, and a real receiver.
+  // Save the pending payout exactly as parsed. Confirm can only approve this row.
   const pendingId = crypto.randomUUID();
   await db.prepare(`INSERT INTO payouts (id, vendor_name, amount_cents, currency, status, confidence, requires_approval, notes, receiver, decision_id) VALUES (?,?,?,?,?,?,?,?,?,?)`)
     .run(pendingId, vendor, amountCents, "USD", "pending", decision.confidence, 1, "Chat pending", receiver, decision.decisionId);
