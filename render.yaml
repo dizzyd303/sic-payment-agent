@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: sic-payment-agent-api
+    runtime: node
+    plan: free
+    buildCommand: |
+      pnpm install
+      pnpm run build
+    startCommand: node dist/main.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: PORT
+        value: "10000"
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_MODE
+        value: sandbox
+      - key: PAYPAL_BASE_URL
+        value: https://api-m.sandbox.paypal.com
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: CONFIDENCE_THRESHOLD
+        value: "0.7"
+    healthCheckPath: /health
+    autoDeploy: true
