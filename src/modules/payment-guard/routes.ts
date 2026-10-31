@@ -32,7 +32,7 @@ paymentGuardRouter.get("/pending", async (_, res) => {
 paymentGuardRouter.post("/approve/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await approvePendingPayout(id);
+    const result = await approvePendingPayout(id, req.body?.receiver);
     res.json({ id, status: "processing", batchId: result.batchId });
   } catch (e: any) {
     const code = e.statusCode ?? 422;

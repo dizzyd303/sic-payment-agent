@@ -301,7 +301,7 @@ async function loadApprovalsGrid() {
     {
       headerName: 'Actions',
       cellRenderer: params => `
-        <button class="btn btn-sm" onclick="approvePayout('${params.data.id}')">Approve</button>
+        <button class="btn btn-sm" onclick="approvePayout('${params.data.id}', '${params.data.receiver || ''}')">Approve</button>
         <button class="btn btn-sm secondary" onclick="rejectPayout('${params.data.id}')">Reject</button>
       `,
       width: 200,
@@ -311,11 +311,15 @@ async function loadApprovalsGrid() {
   createGrid('approvalsGrid', columnDefs, rows);
 }
 
-window.approvePayout = async (id) => {
-  const res = await fetch(`/api/guard/approve/${id}`, { method: 'POST' }).then(r => r.json());
-  alert(res.batchId ? `Payout approved! Batch: ${res.batchId}` : 'Error: ' + res.error);
+window.approvePayout = async (id, receiver) => {
+  if (!receiver) {
+    receiver = prompt('PayPal email for this payout? No payment will move without a real receiver.');
+    if (!receiver) { alert('Cancelled: no receiver supplied, no payment sent.'); return; }
+  }
+  const res = await fetch('/api/guard/approve/' + id, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ receiver: receiver }) }).then(r => r.json());
+  alert(res.batchId ? 'Payout approved! Batch: ' + res.batchId : 'Error: ' + (res.message || res.error));
   loadApprovalsGrid();
-};
+}
 
 window.rejectPayout = async (id) => {
   await fetch(`/api/guard/reject/${id}`, { method: 'POST' });
