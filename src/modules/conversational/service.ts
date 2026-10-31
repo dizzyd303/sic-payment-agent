@@ -30,7 +30,7 @@ export async function handleMessage(message: string) {
   const decision = await decisionMatrix.decide({
     module: "conversational",
     action: "pay",
-    features: { vendor, amount: amountCents, parseConfidence: parseConf },
+    features: { vendor, amount: amountCents / 100, amount_cents: amountCents, parseConfidence: parseConf },
   });
   // Persist the EXACT pending transaction. Chat confirm can only approve
   // this row, with its stored vendor/amount, and a real receiver.

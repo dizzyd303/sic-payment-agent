@@ -14,6 +14,15 @@ const views = {
 
 let gridInstances = {};
 
+function parseStoredTime(s) {
+  if (!s) return new Date(NaN);
+  if (typeof s === "string" && s.length === 19 && s.charAt(10) === " ") {
+    return new Date(s.replace(" ", "T") + "Z");
+  }
+  return new Date(s);
+}
+
+
 function show(view) {
   Object.entries(views).forEach(([k, v]) => v.classList.toggle('hidden', k !== view));
   document.querySelectorAll('.links a').forEach(a => a.classList.toggle('active', a.dataset.view === view));
@@ -74,7 +83,7 @@ async function startStream() {
       <div class="stream-card">
         <div class="sc-head">
           <span class="sc-mod">${r.module}</span>
-          <span class="sc-time">${new Date(r.created_at).toLocaleTimeString()}</span>
+          <span class="sc-time">${parseStoredTime(r.created_at).toLocaleString()}</span>
         </div>
         <div class="sc-action">${r.action_type} → ${r.decision}</div>
         <div class="sc-conf">confidence <b>${(r.confidence * 100).toFixed(1)}%</b> / threshold ${(r.threshold * 100).toFixed(0)}%</div>
@@ -359,7 +368,7 @@ async function loadDecisionsGrid() {
   const rows = await fetch('/api/decisions').then(r => r.json()).catch(() => []);
   
   const columnDefs = [
-    { headerName: 'Time', field: 'created_at', valueFormatter: params => new Date(params.value).toLocaleString(), width: 180 },
+    { headerName: 'Time', field: 'created_at', valueFormatter: params => parseStoredTime(params.value).toLocaleString(), width: 180 },
     { headerName: 'Module', field: 'module', width: 120 },
     { headerName: 'Action', field: 'action_type', width: 120 },
     { headerName: 'Confidence', field: 'confidence', valueFormatter: params => (params.value * 100).toFixed(1) + '%', width: 120 },
