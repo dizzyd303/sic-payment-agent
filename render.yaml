@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: sic-payment-agent-api
+    name: sic-payment-agent
     runtime: node
     plan: free
     buildCommand: |

@@ -6,6 +6,12 @@ SIC Payment Agent is a payment guard for agentic commerce. Natural language beco
 
 The LLM parses free-form natural language and generates audit-ready narrations that explain deterministic decisions.
 
+## Live Demo
+
+**Live demo (Render, free tier): https://sic-payment-agent.onrender.com/**
+
+Free tier spins down after inactivity, so the first load may take a moment to wake up. The demo runs the same guard code as this repo, with PayPal Payouts on Sandbox.
+
 ## What it does
 
 1. **Chat** — Say "pay the plumber $200" and you get a pending payout. No payment has been sent yet.
