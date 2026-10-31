@@ -69,27 +69,18 @@ sic-payment-agent/
 │   ├── main.ts                    # Express app + route mounting
 │   ├── services/
 │   │   ├── paypal/
-│   │   │   ├── client.ts          # Direct PayPal API (OAuth, Payouts)
-│   │   │   └── mcp-client.ts      # MCP client
-│   │   ├── apimatic/client.ts     # APIMatic integration
-│   │   ├── llm/provider.ts        # NVIDIA + Ollama
-│   │   └── tavily/client.ts       # Business research
+│   │   │   └── client.ts          # Direct PayPal API (OAuth, Payouts)
+│   │   └── llm/provider.ts        # NVIDIA + Ollama
 │   ├── modules/
-│   │   ├── agent/
-│   │   ├── receivables/
 │   │   ├── payment-guard/         # Confidence-gated payouts
-│   │   ├── conversational/        # Natural language → payouts
-│   │   ├── invoices/
-│   │   ├── subscriptions/
-│   │   ├── products/
-│   │   ├── mcp/
-│   │   └── apimatic/
+│   │   └── conversational/        # Natural language → payouts
 │   ├── core/decision-matrix.ts    # Deterministic scoring engine
 │   └── db/init.ts                 # SQLite schema
 ├── public/
 │   ├── index.html                 # Dashboard UI
 │   ├── app.js                     # UI logic (vanilla JS)
 │   └── styles.css                 # Dark theme
+├── demo-run.mjs                   # Script used in the demo video
 ├── JUDGE_RUNBOOK.md               # Demo guide
 └── package.json
 ```
