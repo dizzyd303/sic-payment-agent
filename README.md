@@ -137,6 +137,12 @@ Demo video: https://youtu.be/V8Li41eCue0 — 1:39, captioned, one flow end-to-en
 
 ## Screenshots
 
+Clean-URL UI run, 10/31/2026, 1:02:37 PM, one $200 plumber payout, escalated, approvals cleared:
+
+![Dashboard, clean Decision Stream](docs/ui-dashboard.png)
+
+![Decisions, one escalate](docs/ui-decisions.png)
+
 Terminal demo run, from the video recording, same guard flow ending in PayPal SUCCESS:
 
 ![Server start](docs/demo-server-start.png)
