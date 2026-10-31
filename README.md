@@ -15,13 +15,6 @@ The LLM parses free-form natural language and generates audit-ready narrations t
 5. **Sync** — Sync polls PayPal for the batch status and records a success or failure outcome only when PayPal reports a terminal status. Repeated syncs do not duplicate outcomes.
 6. **Audit** — Every decision and every outcome is recorded in SQLite, so any payout can be traced back to why it was approved, blocked, or escalated.
 
-## Prize categories
-
-- Best Use of Agentic Commerce — $5K
-- Best Use of PayPal + AI — $5K
-- Most Impactful — $5K
-- Best Demo Delivery — $5K
-
 ## Decision Matrix
 
 Every payout flows through the same steps:
