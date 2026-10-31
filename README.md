@@ -70,7 +70,6 @@ sic-payment-agent/
 │   ├── services/
 │   │   ├── paypal/
 │   │   │   ├── client.ts          # Direct PayPal API (OAuth, Payouts)
-│   │   │   ├── agent-toolkit.ts   # PayPal agent toolkit wrapper
 │   │   │   └── mcp-client.ts      # MCP client
 │   │   ├── apimatic/client.ts     # APIMatic integration
 │   │   ├── llm/provider.ts        # NVIDIA + Ollama
