@@ -6,7 +6,12 @@ export const paymentGuardRouter: Router = Router();
 
 paymentGuardRouter.post("/evaluate", async (req, res) => {
   const { vendor_name, amount, memo } = req.body;
-  res.json(await evaluatePayout(vendor_name, amount, memo));
+  try {
+    res.json(await evaluatePayout(vendor_name, amount, memo));
+  } catch (e: any) {
+    const code = e.statusCode ?? 422;
+    res.status(code).json({ error: "evaluation_failed", message: e?.message || "Evaluation error" });
+  }
 });
 
 paymentGuardRouter.post("/request", async (req, res) => {
@@ -50,11 +55,16 @@ paymentGuardRouter.post("/sync/:id", async (req, res) => {
 paymentGuardRouter.post("/reject/:id", async (req, res) => {
   const { id } = req.params;
   const stmt = db.prepare("SELECT * FROM payouts WHERE id=?");
-  const row = await stmt.get(id) as { decision_id: string | null } | undefined;
-  if (row && row.decision_id) {
+  const row = await stmt.get(id) as { decision_id: string | null; status: string } | undefined;
+  // Pending-only (Fix 4, second review item 4b): rejecting must not
+  // overwrite a completed / processing / already-rejected payout.
+  if (!row) return res.status(404).json({ error: "not found" });
+  if (row.status !== "pending") return res.status(409).json({ error: "payout_not_pending", status: row.status });
+  if (row.decision_id) {
     await decisionMatrix.recordOutcome(row.decision_id, "escalated");
   }
-  const rejectStmt = db.prepare("UPDATE payouts SET status=?, requires_approval=FALSE WHERE id=?");
-  await rejectStmt.run("rejected", id);
+  const rejectStmt = db.prepare("UPDATE payouts SET status=?, requires_approval=FALSE WHERE id=? AND status=?");
+  const moved = await rejectStmt.run("rejected", id, "pending");
+  if (moved.changes === 0) return res.status(409).json({ error: "payout_not_pending", status: row.status });
   res.json({ id, status: "rejected" });
 });

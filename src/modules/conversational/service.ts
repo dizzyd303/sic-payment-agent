@@ -17,7 +17,11 @@ export async function handleMessage(message: string) {
   const amountCents = intent.amount_cents ?? intent.amount ?? 0;
   const vendor = (intent.vendor || "").toString().trim().toLowerCase();
   const parseConf = intent.confidence ?? 0.3;
-  const parseFailed = !hasPaymentKeyword || vendor === "unknown" || !vendor || amountCents <= 0;
+  // No pending row is created for a non-integer, non-positive, or
+  // over-cap amount: the same server-side cap as the guard path applies
+  // here ($10,000 / 1,000,000 cents by default, MAX_PAYOUT_CENTS override).
+  const maxCents = (() => { const p = Number(process.env.MAX_PAYOUT_CENTS); return Number.isInteger(p) && p > 0 ? p : 1_000_000; })();
+  const parseFailed = !hasPaymentKeyword || vendor === "unknown" || !vendor || !Number.isInteger(amountCents) || amountCents <= 0 || amountCents > maxCents;
   if (parseFailed) {
     const conversationalReply = `I\u2019m SIC Payment Agent, your PayPal-native payment assistant. I can:\n\u2022 Track receivables and chase overdue invoices\n\u2022 Guard outgoing payouts with confidence scoring and approval workflows\n\u2022 Move money conversationally, e.g. "pay the plumber $200"\nTry asking about a specific task, or say "pay <vendor> $<amount>" to start a payment.`;
     return { reply: conversationalReply, decisionId: null, confidence: 0, requiresApproval: false, parseFailed: true };
