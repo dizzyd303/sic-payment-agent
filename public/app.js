@@ -160,7 +160,7 @@ function createGrid(containerId, columnDefs, rowData, options = {}) {
     ...options,
   };
   
-  const grid = new agGrid.Grid(container, gridOptions);
+  const grid = typeof agGrid.createGrid === "function" ? agGrid.createGrid(container, gridOptions) : new agGrid.Grid(container, gridOptions);
   gridInstances[containerId] = grid;
   return grid;
 }
