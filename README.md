@@ -2,24 +2,36 @@
 
 **Built for PayPal AI Hackathon 2026** — *Build What's Next with PayPal and AI*
 
-An AI-native payment platform where every financial decision is scored, narrated, and confidence-gated — executed on PayPal rails.
+SIC Payment Agent is a payment guard for agentic commerce. Natural language becomes a stored pending payout, scored by a deterministic decision policy, gated for human approval, and executed on PayPal Payouts in Sandbox, with the real batch status retrieved and recorded.
 
-## 🏆 Prize Categories Targeted
+## What it does
 
-| Category | Prize | Status |
-|----------|-------|--------|
-| Best Overall | $12K / $8K / $5K | ✅ Targeting |
-| Best Use of PayPal + AI | $5K | ✅ @paypal/agent-toolkit native |
-| Best Use of Agentic Commerce | $5K | ✅ MCP + Workflows |
-| Most Creative | $5K | ✅ Decision Matrix + LLM Narration |
-| Most Impactful | $5K | ✅ Confidence-gated money movement |
-| Best Demo Delivery | $5K | ✅ 5 polished demo flows |
-| **Sponsor: AG Grid** | $5K / $2K / $1K | ✅ Self-serve dashboard |
-| **Sponsor: Channel3** | $1.5K | ✅ 100M+ product catalog |
-| **Sponsor: APIMatic** | $1K × 3 | ✅ Instant PayPal API context |
-| **Sponsor: Render** | $1K credits | ✅ Deployment ready |
+1. **Chat** — Say "pay the plumber $200" and you get a pending payout. No payment has been sent yet.
+2. **Guard** — The payout is evaluated against completed payout history for that vendor: at least 3 completed payouts, compared to their median amount. The result is a confidence score, a threshold, deterministic reasons, and a plain-English narration.
+3. **Approval** — Confirm approves only the exact stored payout. A changed amount, vendor, memo, or receiver is blocked. A replayed confirm is blocked.
+4. **Execution** — An approved payout is sent through the PayPal Payouts API. Batch acceptance is not success — it just means PayPal accepted the batch.
+5. **Sync** — Sync polls PayPal for the batch status and records a success or failure outcome only when PayPal reports a terminal status. Repeated syncs do not duplicate outcomes.
+6. **Audit** — Every decision and every outcome is recorded in SQLite, so any payout can be traced back to why it was approved, blocked, or escalated.
 
-## 🚀 Quick Start
+## Prize categories
+
+- Best Use of Agentic Commerce — $5K
+- Best Use of PayPal + AI — $5K
+- Most Impactful — $5K
+- Best Demo Delivery — $5K
+
+## Decision Matrix
+
+Every payout flows through the same steps:
+
+1. **Parse** — The chat LLM parses vendor and amount from natural language. Guard features come from completed payout history in the database.
+2. **Score** — Deterministic policy only. Vendor known plus amount within 50% of the median scores higher; unknown vendor or amount far from the median scores lower. The LLM does not score.
+3. **Threshold** — Fixed at 0.7 for payment-guard. Below threshold, the payout escalates for human approval.
+4. **Route** — Auto-execute or escalate to a human.
+5. **Narrate** — The LLM explains the deterministic result in plain English.
+6. **Outcomes** — Outcomes are logged for audit. Thresholds do not adapt.
+
+## Quick Start
 
 ```bash
 # Clone & install
@@ -36,75 +48,18 @@ pnpm dev
 # → http://localhost:3000
 ```
 
-## 🎯 Core Features
-
-### 1. Conversational Money Movement
-Natural language → Structured intent → Confidence scoring → Human approval → PayPal Payout
-```
-"pay the plumber $200" → Guard evaluates (confidence: 45%) → Escalates → You approve → Executed
-```
-
-### 2. Receivables on PayPal Orders
-Track what's owed → Create PayPal Orders for collection → AI-drafted chase emails → Overdue automation
-
-### 3. Payment Guard — Confidence Gate
-Every outgoing payout scored against:
-- Vendor history
-- Amount anomaly detection
-- Time-of-day patterns
-- Conversational clarity
-**Never auto-pays low confidence**
-
-### 4. Full Invoicing Lifecycle (Agent Toolkit)
-Create → Send → Remind → QR Code → Record Payment → Recurring Series
-All via `@paypal/agent-toolkit` tools, not raw API calls
-
-### 5. Subscription Management
-Plans → Subscribe → Pause → Resume → Cancel → Webhook-ready
-
-### 4. Product Commerce (Channel3 + PayPal)
-Search 100M+ products → Create PayPal catalog entries → Generate invoices/orders
-
-### 5. MCP Integration (Model Context Protocol)
-- **Remote:** Connect to `mcp.paypal.com` (PayPal's hosted MCP)
-- **Local:** Run `@paypal/agent-toolkit mcp` via stdio
-- Call PayPal tools directly from Claude Desktop, Cursor, or our UI
-
-### 6. APIMatic Instant Context
-One-click → Complete PayPal API documentation formatted for LLM consumption
-Query-specific context extraction for any natural language request
-
-### 7. AG Grid Self-Serve Dashboard
-- Sorting, filtering, grouping, pivoting
-- CSV/Excel export
-- Column pinning, row selection
-- Real-time updates
-
-### 8. Decision Matrix — The Brain
-Every consequential action:
-1. **Perception** → LLM extracts structured features
-2. **Scoring** → Heuristic + LLM reasoning → 0-1 confidence
-3. **Threshold** → Module-specific (60-75%)
-4. **Route** → Auto-execute OR Escalate to human
-5. **Narrate** → LLM explains decision in plain English
-6. **Learn** → Outcome tracking → Threshold adaptation
-
-## 🏗 Architecture
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  SIC Payment Agent v2                                       │
-├─────────────────────────────────────────────────────────────┤
-│  UI: Vanilla JS + AG Grid Community (no React build step)  │
-│  Agent: Vercel AI SDK + @paypal/agent-toolkit              │
-│  Decision: Custom Matrix + NVIDIA Nemotron / Ollama        │
-│  MCP: @modelcontextprotocol/sdk (remote + local)           │
-│  Data: SQLite (dev) / PostgreSQL (prod)                    │
-│  PayPal: Orders v2, Payouts v1, Invoicing, Subscriptions   │
-└─────────────────────────────────────────────────────────────┘
+SIC Payment Agent
+UI: Vanilla JS (no React build step)
+Server: Express
+Decision: Custom deterministic matrix + NVIDIA Nemotron / Ollama for parsing and narration
+Data: SQLite (dev) / PostgreSQL (prod)
+PayPal: Payouts API via direct client, Sandbox
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 sic-payment-agent/
@@ -112,56 +67,49 @@ sic-payment-agent/
 │   ├── main.ts                    # Express app + route mounting
 │   ├── services/
 │   │   ├── paypal/
-│   │   │   ├── client.ts          # Direct PayPal API (OAuth, Orders, Payouts)
-│   │   │   ├── agent-toolkit.ts   # @paypal/agent-toolkit wrapper + workflows
-│   │   │   └── mcp-client.ts      # MCP client (remote + local)
+│   │   │   ├── client.ts          # Direct PayPal API (OAuth, Payouts)
+│   │   │   ├── agent-toolkit.ts   # PayPal agent toolkit wrapper
+│   │   │   └── mcp-client.ts      # MCP client
 │   │   ├── apimatic/client.ts     # APIMatic integration
-│   │   ├── llm/provider.ts        # Multi-LLM (NVIDIA + Ollama)
+│   │   ├── llm/provider.ts        # NVIDIA + Ollama
 │   │   └── tavily/client.ts       # Business research
 │   ├── modules/
-│   │   ├── agent/routes.ts        # Agent Toolkit endpoints
-│   │   ├── receivables/           # Orders-based receivables
+│   │   ├── agent/
+│   │   ├── receivables/
 │   │   ├── payment-guard/         # Confidence-gated payouts
-│   │   ├── conversational/        # NL → Payouts
-│   │   ├── invoices/              # Full invoicing (Agent Toolkit)
-│   │   ├── subscriptions/         # Subscription management
-│   │   ├── products/              # Catalog (Channel3 + PayPal)
-│   │   ├── mcp/                   # MCP connection UI
-│   │   └── apimatic/              # APIMatic context UI
-│   ├── core/decision-matrix.ts    # Confidence scoring engine
+│   │   ├── conversational/        # Natural language → payouts
+│   │   ├── invoices/
+│   │   ├── subscriptions/
+│   │   ├── products/
+│   │   ├── mcp/
+│   │   └── apimatic/
+│   ├── core/decision-matrix.ts    # Deterministic scoring engine
 │   └── db/init.ts                 # SQLite schema
 ├── public/
-│   ├── index.html                 # SPA with AG Grid CDN
-│   ├── app.js                     # All UI logic (vanilla JS)
-│   └── styles.css                 # Dark theme + AG Grid vars
-├── JUDGE_RUNBOOK.md               # Complete demo guide
-├── HACKATHON_STRATEGY.md          # Internal strategy doc
+│   ├── index.html                 # Dashboard UI
+│   ├── app.js                     # UI logic (vanilla JS)
+│   └── styles.css                 # Dark theme
+├── JUDGE_RUNBOOK.md               # Demo guide
 └── package.json
 ```
 
-## 🔑 Key Technologies
+## API Endpoints
 
-| Tech | Purpose |
-|------|---------|
-| `@paypal/agent-toolkit` | PayPal tools as AI functions (30+ tools) |
-| `ai` (Vercel AI SDK) | Agent framework, tool calling, streaming |
-| `@modelcontextprotocol/sdk` | MCP client for PayPal MCP |
-| `ag-grid-community` | Self-serve data grid (sponsor prize) |
-| `better-sqlite3` | Local SQLite for dev |
-| `axios` | HTTP client |
-| `zod` | Schema validation |
+| Module | Endpoints |
+|--------|-----------|
+| **Guard** | `/api/guard/request`, `/api/guard/approve/:id`, `/api/guard/sync/:id`, `/api/guard/reject/:id`, `/api/guard/evaluate`, `/api/guard/pending` |
+| **Chat** | `/api/chat/message`, `/api/chat/confirm` |
+| **Decisions** | `/api/decisions` |
 
-## 🧪 Demo Flows (5 Scenarios)
+## Tests
 
-1. **Morning Coffee** — Conversational payout with guard
-2. **Freelancer Invoice** — Full invoicing lifecycle
-3. **Subscription Business** — Recurring revenue management
-4. **Product Sale** — Channel3 search → PayPal Order
-5. **AI Dashboard** — AG Grid + natural language
+```bash
+pnpm exec tsc --noEmit
+pnpm test
+# 13 tests passed: payment guard, Postgres SQL helpers, auth
+```
 
-See [JUDGE_RUNBOOK.md](./JUDGE_RUNBOOK.md) for step-by-step instructions.
-
-## 🔧 Environment Variables
+## Environment Variables
 
 ```bash
 # Required
@@ -170,46 +118,27 @@ PAYPAL_CLIENT_SECRET=
 PAYPAL_MODE=sandbox
 
 # LLM (at least one)
-NVIDIA_API_KEY=           # NVIDIA Nemotron free tier
+NVIDIA_API_KEY=
 # OR
 OLLAMA_URL=http://localhost:11434  # Local Ollama
-
-# Optional Enhancements
-TAVILY_API_KEY=           # Business research
-CHANNEL3_API_KEY=         # Product catalog
-APIMATIC_API_KEY=         # Instant API context
-PAYPAL_MCP_URL=https://mcp.paypal.com
 
 # Server
 PORT=3000
 CONFIDENCE_THRESHOLD=0.7
 ```
 
-## 📡 API Endpoints
+## Demo Video
 
-| Module | Endpoints |
-|--------|-----------|
-| **Agent** | `/api/agent/tools`, `/api/agent/workflow`, `/api/agent/invoice/create-and-send`, `/api/agent/subscription/*` |
-| **Invoices** | `/api/invoices` (CRUD + send/remind/qr/payment) |
-| **Subscriptions** | `/api/subscriptions/plans`, `/api/subscriptions/subscribe`, `/api/subscriptions/:id/*` |
-| **Products** | `/api/products/search`, `/api/products`, `/api/products/from-channel3` |
-| **MCP** | `/api/mcp/status`, `/api/mcp/connect`, `/api/mcp/tools/:name` |
-| **APIMatic** | `/api/apimatic/context`, `/api/apimatic/context-for-query` |
-| **Core** | `/api/receivables`, `/api/guard/*`, `/api/chat/*`, `/api/decisions` |
+Demo video: https://youtu.be/V8Li41eCue0 — 1:39, captioned, one flow end-to-end: chat message → pending → blocked changes → approve the exact pending payout → execute on PayPal Sandbox → sync to real status.
 
-## 🎬 Demo Video
-
-Demo video: not yet recorded. Planned recording is under 3 minutes and covers ONE proven flow end-to-end: parse -> resolve recipient -> evaluate/score -> block if low -> approve the exact pending transaction -> execute on PayPal Sandbox -> retrieve real status -> record -> dashboard shows decision, reasons, approval, and transaction status. No placeholder video link is included until the recording exists.
-
-## 📝 License
+## License
 
 MIT — Built for PayPal AI Hackathon 2026
 
-## 🤝 Team
+## Team
 
-**D. Young & Co.** — Private AI Consulting & Investigative Research  
-Fulton, Missouri
+**D. Young & Co.** — Fulton, Missouri
 
 ---
 
-*Every financial decision deserves intelligence. Every payment deserves confidence. Every agent deserves PayPal.*
+*Every payment deserves a guard, and every guard deserves an audit trail.*
