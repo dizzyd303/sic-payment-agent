@@ -1,3 +1,5 @@
+> Update 2026-10-31: after the Oct 30 run above, decision amount units were fixed (dollars, with amount_cents preserved), Approvals approve now prompts for a receiver when a pending has none, AG Grid rendering was fixed for v36, and the UI nav was trimmed to Dashboard, Approvals, Chat, and Decisions. `pnpm exec tsc --noEmit` clean and `pnpm test` 13 passed again on 2026-10-31. The end-to-end flow above remains the Oct 30 run; it was not re-run end-to-end after the Oct 31 changes.
+
 # SIC Payment Agent — End-to-End Test Report (fresh, 2026-10-30)
 
 Server: localhost:3001, built with `pnpm run build` (tsc clean), test DB

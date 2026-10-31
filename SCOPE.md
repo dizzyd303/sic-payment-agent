@@ -1,3 +1,5 @@
+> Historical scaffold note, 2026-10-31: this file is the early project scaffold, not the current submission scope. The current submission is the payment guard only: chat, guard, approval, execution, sync, audit. The UI now shows Dashboard, Approvals, Chat, and Decisions only; Receivables, Invoices, Subscriptions, Products, MCP, and APIMatic tabs were removed from the UI on 2026-10-31. See README.md and JUDGE_RUNBOOK.md for the current, proven flow.
+
 # SIC Payment Agent — Scope
 
 Scaffolded TypeScript project at /home/spyda573/sic-payment-agent

@@ -78,6 +78,10 @@ A replayed confirm after step 4 is blocked.
 | Chat | `/api/chat/message`, `/api/chat/confirm` |
 | Decisions | `/api/decisions` |
 
+## UI
+
+The UI shows Dashboard, Approvals, Chat, and Decisions only. Approvals Approve prompts for a PayPal email if the pending payout has no receiver stored; no payment moves without a real receiver.
+
 ## Demo Video
 
 https://youtu.be/V8Li41eCue0 — 1:39, captioned, the same flow above.
